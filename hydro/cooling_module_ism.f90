@@ -2,7 +2,7 @@
 !! solve_cooling_ism is used if there is no RT
 !! Authors: Patrick Hennebelle, Benjamin Godard
 !=======================================================================
-subroutine solve_cooling_ism(nH,T2,dt,deltaT2,ncell)
+subroutine solve_cooling_ism(nH,T2,zsolar,boost,dt,deltaT2,ncell)
 !=======================================================================
   use amr_parameters, only:mu_gas
   implicit none
@@ -14,7 +14,7 @@ subroutine solve_cooling_ism(nH,T2,dt,deltaT2,ncell)
   ! ncell - number of elements in the vector
   integer::ncell
   real(kind=8)::dt
-  real(kind=8),dimension(1:ncell)::nH,T2,deltaT2
+  real(kind=8),dimension(1:ncell)::nH,T2,zsolar,boost,deltaT2
   real(kind=8)::NN,TT   ! Input/output variables to analytic function calc_temp
   real(kind=8)::TT_ini,mu
   integer::i
@@ -24,14 +24,14 @@ subroutine solve_cooling_ism(nH,T2,dt,deltaT2,ncell)
      NN = nH(i)      ! H/cc
      TT = T2(i) * mu ! K
      TT_ini = TT
-     call calc_temp(NN,TT,dt)
+     call calc_temp(NN,TT,dt,nnnnnnzsolar(i),boost(i))
      deltaT2(i) = (TT - TT_ini) / mu
   end do
 end subroutine solve_cooling_ism
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-subroutine calc_temp(NN,TT,dt_tot)
+subroutine calc_temp(NN,TT,dt_tot,zsolar,boost)
   ! NN = number densisty collision partners (hydrogen) in H/cm3
   ! TT = temperature in Kelvin (T2*mu)
   ! dt_tot = timestep in s
@@ -46,7 +46,8 @@ subroutine calc_temp(NN,TT,dt_tot)
   real(dp) :: TTold, dTemp, eps
   real(dp) :: ref, ref2, varrel
   real(dp) :: dRefdT, alpha_ct
-
+  real(dp), intent(in) :: zsolar, boost
+  
   if( TT .le. 0) then
      TT = 50d0
      return
@@ -78,11 +79,11 @@ subroutine calc_temp(NN,TT,dt_tot)
 
      ! Calculate cooling rate
      if (TT < 10035d0) then
-        call cooling_low(TT,NN,ref)
-        call cooling_low(TT*(1d0+eps),NN,ref2)
+        call cooling_low(TT,NN,zsolar,ref)
+        call cooling_low(TT*(1d0+eps),NN,zsolar,ref2)
      else
-        call cooling_high(TT,NN,ref)
-        call cooling_high(TT*(1d0+eps),NN,ref2)
+        call cooling_high(TT,NN,zsolar,ref)
+        call cooling_high(TT*(1d0+eps),NN,zsolar,ref2)
      end if
 
      ! dT = T*(1+eps)-T = eps*T
@@ -118,14 +119,14 @@ end subroutine calc_temp
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-subroutine cooling_high(T,n,ref)
+subroutine cooling_high(T,n,zsolar,ref)
   ! T = physical temperature in K
   ! n = number of Hydrogen atoms for collision / cm3
   ! ref = cooling rate
   use amr_parameters, only:dp
   implicit none
 
-  real(dp) :: T,n,ref
+  real(dp) :: T,n,zsolar,ref
   real(dp) :: cold,hot,logT
 
   ! cooling rate based on Dopita and Sutherland
@@ -155,13 +156,13 @@ subroutine cooling_high(T,n,ref)
   cold=-1*10d0**(cold)
 
   hot = 0
-  ref= hot*n + (n**2)*(cold)
+  ref= hot*n + (n**2)*(cold * zsolar)
 
 end subroutine cooling_high
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-subroutine cooling_low(T,n,ref)
+subroutine cooling_low(T,n,zsolar,ref)
   ! T = physical temperature in K
   ! n = number of Hydrogen atoms for collision / cm3
   ! ref = cooling rate
@@ -200,13 +201,13 @@ subroutine cooling_low(T,n,ref)
  ! NOTE - HERE WE USE THE NON-PHOTOIONISED RATES AS THIS MIGHT
  !        BE TOO HIGH AT x=1
   cold_cII = 92 * 1.38d-16 * 2 * (2.8d-7* ((T/100)**(-0.5d0))*x + 8d-10*((T/100)**(0.07d0))) &
-       * 3.5d-4 * 0.4d0 * exp(-92/T)
+       * 3.5d-4 * 0.4d0 * exp(-92/T) * zsolar
 
   ! Oxygen-prompted cooling
   ! abundance 8.6 10-4 depletion 0.8
   cold_o = 1d-26 * sqrt(T) * (24 * exp(-228/T) + 7 * exp(-326/T))
   ! take oxygen abundance into account
-  cold_o = cold_o * 4.5d-4
+  cold_o = cold_o * 4.5d-4 * zsolar
 
   ! Hydrogen-prompted cooling
   ! Formula from Spitzer 1978
@@ -225,7 +226,7 @@ subroutine cooling_low(T,n,ref)
 
   cold_cII_m = 6.2d4 * 1.38d-16 * 1d0 * &    !transition 2P->4P
              ( 2.3d-8* (T/10000)**(-0.5) * x + 1d-12) *exp(-6.2d4/T) &
-             * 3.5d-4 * 0.4
+             * 3.5d-4 * 0.4 * zsolar
 
   if (T .le. 1d4) then
      cold_o_m = 2.3d4 * 1.38d-16 / 3d0 * &
@@ -252,7 +253,7 @@ subroutine cooling_low(T,n,ref)
   endif
 
   ! Oxygen abundance
-  cold_o_m = cold_o_m * 4.5d-4
+  cold_o_m = cold_o_m * 4.5d-4 * zsolar
 
   ! Sum of the cooling terms
   cold = cold_cII  + cold_h  + cold_o  + cold_o_m +  cold_cII_m
