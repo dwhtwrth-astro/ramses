@@ -170,7 +170,7 @@ subroutine cooling_low(T,n,zsolar,ref)
   use amr_parameters, only:dp,rt
   implicit none
 
-  real(dp) :: T,n,ref
+  real(dp) :: T,n,zsolar,ref
   real(dp) :: cold,hot,cold_cII,cold_o,cold_h,cold_cII_m,cold_o_m,cold_rec
   real(dp) :: param,G0,epsilon,bet,x,ne   ! x is the ionisation rate
   real(dp), parameter :: f_cr = 0.1d0
