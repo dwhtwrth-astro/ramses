@@ -232,6 +232,8 @@ module amr_parameters
   real(dp)::polytrope_index=1.0d0       ! sets gamma in EOS = polytropic index
   real(dp)::T_eos=10                    ! sets T0 in EOS: isothermal temperature or temperature normalisation, in K
   real(dp)::mu_gas=1d0                  ! molecular weight
+  real(dp)::G0 = 0.1d0                  ! UV field in Habing units
+  real(dp)::f_cr = 0.1d0                ! Cosmic ray scaling factor
   real(dp)::T2_eos=10                   ! = T/mu, used in the computations
 
   ! Movie
