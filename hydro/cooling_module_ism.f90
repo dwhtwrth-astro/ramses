@@ -4,7 +4,7 @@
 !=======================================================================
 subroutine solve_cooling_ism(nH,T2,zsolar,boost,dt,deltaT2,ncell)
 !=======================================================================
-  use amr_parameters, only:mu_gas
+  use amr_parameters, only:mu_gas,G0,f_cr
   implicit none
   ! BRIDGE FUNCTION WITH SAME INTERFACE AS solve_cooling
   ! nH - hydrogen number density in PHYSICAL units
@@ -167,13 +167,13 @@ subroutine cooling_low(T,n,zsolar,ref)
   ! n = number of Hydrogen atoms for collision / cm3
   ! ref = cooling rate
   ! TC: precision errors are significant here...
-  use amr_parameters, only:dp,rt
+  use amr_parameters, only:dp,rt,G0,f_cr
   implicit none
 
   real(dp) :: T,n,zsolar,ref
   real(dp) :: cold,hot,cold_cII,cold_o,cold_h,cold_cII_m,cold_o_m,cold_rec
   real(dp) :: param,G0,epsilon,bet,x,ne   ! x is the ionisation rate
-  real(dp), parameter :: f_cr = 0.1d0
+  !real(dp), parameter :: f_cr = 0.1d0
   ! f_cr is a scaling factor that can be applied to hot and cold_rec to approximately vary cosmic ionisation rates by a value
 
   ! Cooling and heating function computed from the cooling of
@@ -263,7 +263,7 @@ subroutine cooling_low(T,n,zsolar,ref)
   !!! formula 1 et 2 of Wolfire et al. 1995
 
   !!!! G0 is the UV flux compared to the one given by Habing et Draine
-  G0 = 0.17d0/1.7d0
+  G0 = G0 !0.17d0/1.7d0
 
   param = G0 * sqrt(T)/(n*x)
   epsilon = 4.9d-2 / (1 + (param/1925)**0.73)
