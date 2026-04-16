@@ -67,7 +67,7 @@ subroutine unsplit(uin,pin,gravin,flux,tmp,dx,dy,dz,dt,ngrid)
   call ctoprim(uin,qin,cin,gravin,dt,ngrid)
 
   ! Compute TVD slopes
-  call uslope(qin,dq,dx,dt,ngrid)
+  call uslope(qin, dq, dtdx, i, j, k, ngrid)!qin,dq,dx,dt,ngrid)
 
   ! Compute 3D traced-states in all three directions
   if(scheme=='muscl')then
@@ -989,7 +989,7 @@ end subroutine ctoprim
 !###########################################################
 !###########################################################
 !###########################################################
-subroutine uslope(q,dq,dx,dt,ngrid)
+subroutine uslope(qin, dq, dtdx, i, j, k, ngrid)!q,dq,dx,dt,ngrid)
   use amr_parameters
   use hydro_parameters
   use const
