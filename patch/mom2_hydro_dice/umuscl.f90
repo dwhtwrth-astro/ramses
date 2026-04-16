@@ -26,7 +26,7 @@ subroutine unsplit(uin,pin,gravin,flux,tmp,dx,dy,dz,dt,ngrid)
   implicit none
 
   integer ::ngrid
-  real(dp)::dx,dy,dz,dt
+  real(dp)::dx,dy,dz,dt,dtdx
 
   ! Input states
   real(dp),dimension(1:nvector,iu1:iu2,ju1:ju2,ku1:ku2)::pin
@@ -67,6 +67,7 @@ subroutine unsplit(uin,pin,gravin,flux,tmp,dx,dy,dz,dt,ngrid)
   call ctoprim(uin,qin,cin,gravin,dt,ngrid)
 
   ! Compute TVD slopes
+  dtdx = dt/dx
   call uslope(qin,dq,dx,dt,ngrid)
 
   ! Compute 3D traced-states in all three directions
