@@ -90,7 +90,7 @@ subroutine unsplit(uin,pin,gravin,flux,tmp,dx,dy,dz,dt,ngrid)
      call tracexy (qin,dq,cin,qm,qp,dx,dy   ,dt,ngrid)
 #endif
 #if NDIM==3
-     call tracexyz(qin,dq,cin,qm,qp,dx,dy,dz,dt,ngrid)
+     call tracexyz(qin, qm, qp, dx, dy, dz, dt, ngrid)   !qin,dq,cin,qm,qp,dx,dy,dz,dt,ngrid)
 #endif
   endif
 
